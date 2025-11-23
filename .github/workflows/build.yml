@@ -1,0 +1,36 @@
+name: Build Marlin (SKR 2)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install PlatformIO
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install platformio
+
+    - name: Run Marlin config script
+      run: |
+        chmod +x config.sh
+        ./config.sh
+
+    - name: Build Marlin for SKR 2
+      run: |
+        platformio run -e BIGTREE_SKR_2
+
+    - name: Upload firmware artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware-skr2
+        path: .pio/build/BIGTREE_SKR_2/firmware.bin
