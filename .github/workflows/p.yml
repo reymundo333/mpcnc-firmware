@@ -1,0 +1,56 @@
+name: Build Marlin Firmware
+
+# Trigger builds when pushing or on demand
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout MarlinFirmware
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Python (needed for PlatformIO)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # 3️⃣ Install PlatformIO
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      # 4️⃣ Configure machine
+      # This replaces the missing config.sh step
+      - name: Configure machine
+        run: |
+          echo "Running config-for-machine..."
+          chmod +x src/config-for-machine
+          ./src/config-for-machine src/configs/V1CNC_Rambo_Dual
+
+      # 5️⃣ Build firmware using PlatformIO
+      - name: Build Firmware
+        run: |
+          pio run
+
+      # 6️⃣ Collect firmware and source
+      - name: Package firmware
+        run: |
+          mkdir -p output
+          cp -r Marlin output/Marlin
+          cp .pio/build/*/firmware.bin output/
+          zip -r output/firmware_package.zip output/
+
+      # 7️⃣ Upload artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: marlin-firmware
+          path: output/firmware_package.zip
